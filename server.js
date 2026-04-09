@@ -33,31 +33,16 @@ import cors from 'cors'
 
 
 
-// const ORIGIN = process.env.ORIGIN || "http://localhost:5173"
+const ORIGIN = process.env.ORIGIN || "http://localhost:5173"
 
-
-// dotenv.config();
-// const app = express();
-// app.use(express.json())
-// app.use(cors({
-//   origin: ORIGIN, // Replace with your frontend URL if different
-//   credentials: true,
-// }))
-
-const ORIGIN = process.env.ORIGIN || "http://localhost:5173";
 
 dotenv.config();
 const app = express();
-
-app.use(express.json());
-
+app.use(express.json())
 app.use(cors({
-  origin: ORIGIN,
+  origin: ORIGIN, // Replace with your frontend URL if different
   credentials: true,
-}));
-
-// 🔴 THIS LINE FIXES YOUR ERROR
-app.options('*', cors());
+}))
  
 // Default 4000 matches Frontend/.env.development (VITE_API_BASE_URL)
 const PORT = process.env.PORT || 4000
@@ -130,3 +115,4 @@ app.use(
 //     }
 //     console.log("Server is running on the PORT: ",PORT)
 // })
+export default app;
