@@ -1,0 +1,391 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model Admin {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+
+  name String @default("Admin")
+
+  phoneNum     String    @unique
+  password     String
+  cars         Car[]
+  coupons Coupon[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+//////////////////////
+// CAR PARTNER MODEL
+//////////////////////
+
+model CarPartner {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  name         String?
+  phoneNum     String   @unique
+  email        String?
+
+
+  status       String  @default("Active")
+
+  password     String
+
+  address      String?
+
+  cars         Car[]
+  unavailabilityRequests CarUnavailabilityRequest[]
+
+  otpHash       String?
+  otpExpiresAt  DateTime?
+  otpAttempts   Int      @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  phoneNum      String   @unique
+  firstName     String?
+  lastName      String?
+  email         String?
+  dlNumber        String?
+  aadhaarPdf      String?
+  addressProofPdf String?
+  dlPdf           String?
+  isBlocked     Boolean  @default(false)
+
+  isVerified    Boolean  @default(false)
+
+  otpHash       String?
+  otpExpiresAt  DateTime?
+  otpAttempts   Int      @default(0)
+
+  refreshToken  String?
+  lastLoginAt   DateTime?
+  address   Address?
+
+  bookings      Booking[]
+  reviews       Review[]
+  payments      Payment[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+
+type Address {
+  addressLine String
+  country     String
+  state       String
+  city        String
+  pincode     String
+}
+
+
+
+type Specification {
+  title String
+  value String
+  icon  String
+}
+
+model Car {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+   
+
+  // Basic Info
+  name          String
+  description   String
+  specifications Specification[]
+  features String[]
+
+  
+  brand         String
+  modelYear     Int
+  featured      Boolean  @default(false)
+
+  /// Fleet / internal reference (optional)
+  carNumber     String?
+  /// Registration plate
+  plateNumber   String?
+  airBags       Int?
+
+  // Images & Documents
+  images        String[]
+  documents     String[]
+  thumbnail     String?
+  isVerified    Boolean  @default(false)
+
+
+  partnerId     String?      @db.ObjectId
+  partner       CarPartner?  @relation(fields: [partnerId], references: [id])
+  adminId     String?      @db.ObjectId
+  admin       Admin?  @relation(fields: [adminId], references: [id])
+
+  // Specs
+  location      String?
+  transmission  TransmissionType
+  category      String?
+  fuelType      FuelType
+  powerType     PowerType
+  ac            String?
+  engine        String?
+  brakes        String?
+  doors         Int?
+  mileageKm     Int
+  seating       Int
+  color      String
+  hexCode   String
+
+  // Relations
+  pricing          Pricing[]
+  seasonalPricing  SeasonalPricing[]
+  reviews          Review[]
+  bookings         Booking[]
+  unavailabilityRequests CarUnavailabilityRequest[]
+
+  isAvailable   Boolean  @default(true)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Pricing {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  carId     String   @db.ObjectId
+  car       Car      @relation(fields: [carId], references: [id])
+
+  duration  DurationType
+  price     Int      // price per unit
+
+  bookings  Booking[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([carId, duration])
+}
+
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  carId     String   @db.ObjectId
+  car       Car      @relation(fields: [carId], references: [id])
+
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  rating    Int
+  comment   String?
+
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+
+  carId           String        @db.ObjectId
+  car             Car           @relation(fields: [carId], references: [id])
+
+  pricingId       String        @db.ObjectId
+  pricing         Pricing       @relation(fields: [pricingId], references: [id])
+
+  userId          String        @db.ObjectId
+  user            User          @relation(fields: [userId], references: [id])
+
+  duration        DurationType
+  totalPrice      Int
+
+  bookingType     BookingType
+
+  deliveryAddress String?
+  returnAddress   String?
+  sameReturn      Boolean       @default(false)
+
+  pickupDate      DateTime
+  returnDate      DateTime
+
+  status              BookingStatus @default(PENDING)
+  cancellationReason  String?
+  cancelledAt         DateTime?
+  couponId        String?       @db.ObjectId
+  coupon          Coupon?       @relation(fields: [couponId], references: [id])
+
+  color           String?
+  hexCode         String?
+  orderId         String?
+  paymentId       String?
+  distanceKM      Float?
+  deliveryFee     Float?
+
+  payment         Payment?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Coupon {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  adminId      String    @db.ObjectId
+  admin        Admin     @relation(fields: [adminId], references: [id])
+  code         String    @unique
+  description  String?
+  type         String    // "1" = percentage, "2" = fixed (legacy rows may use words)
+  value        Float
+  startDate    DateTime
+  endDate      DateTime
+  limit        Int?      // Null for unlimited
+  usedCount    Int       @default(0)
+  status       String    @default("Active")
+  applicableTo String?
+
+  bookings     Booking[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+enum DurationType {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+}
+
+enum TransmissionType {
+  AUTO
+  SEMI_AUTO
+  MANUAL
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  CNG
+  ELECTRIC
+  HYBRID
+}
+
+enum PowerType {
+  POWER
+  MANUAL
+}
+
+enum BookingType {
+  DELIVERY
+  PICKUP
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+
+  bookingId            String        @unique @db.ObjectId
+  booking              Booking       @relation(fields: [bookingId], references: [id])
+
+  userId               String        @db.ObjectId
+  user                 User          @relation(fields: [userId], references: [id])
+
+  razorpayOrderId      String
+  razorpayPaymentId    String?
+  razorpaySignature    String?
+
+  amount               Float
+  currency             String        @default("INR")
+
+  status               PaymentStatus @default(PENDING)
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String
+  phone     String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////
+// UNAVAILABILITY REQUEST
+//////////////////////
+
+model CarUnavailabilityRequest {
+  id           String               @id @default(auto()) @map("_id") @db.ObjectId
+
+  carId        String               @db.ObjectId
+  car          Car                  @relation(fields: [carId], references: [id])
+
+  partnerId    String               @db.ObjectId
+  partner      CarPartner           @relation(fields: [partnerId], references: [id])
+
+  fromDateTime DateTime
+  toDateTime   DateTime
+  reason       String?
+
+  status       UnavailabilityStatus @default(PENDING)
+  adminNote    String?
+
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+enum UnavailabilityStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+//////////////////////
+// SEASONAL PRICING
+//////////////////////
+
+model SeasonalPricing {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  carId       String   @db.ObjectId
+  car         Car      @relation(fields: [carId], references: [id])
+
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+
+  hourPrice   Float?
+  dayPrice    Float?
+  weekPrice   Float?
+  monthPrice  Float?
+
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
