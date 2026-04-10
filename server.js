@@ -30,13 +30,13 @@ import adminSeasonalPricingRoute from './app/admin/routes/seasonalPricing.route.
 import adminPaymentRoute from './app/admin/routes/payment.route.js'
 import cors from 'cors'
 
-
+dotenv.config();
 
 
 const ORIGIN = process.env.ORIGIN || "http://localhost:5173"
 
 
-dotenv.config();
+
 const app = express();
 app.use(express.json())
 app.use(cors({
@@ -109,10 +109,9 @@ app.use(
 
 
 
-// app.listen(PORT,(error)=>{
-//     if(error){
-//         console.log(error);
-//     }
-//     console.log("Server is running on the PORT: ",PORT)
-// })
-export default app;
+app.listen(PORT,(error)=>{
+    if(error){
+        console.log(error);
+    }
+    console.log("Server is running on the PORT: ",PORT)
+})
