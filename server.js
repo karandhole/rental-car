@@ -33,9 +33,12 @@ import cors from 'cors'
 dotenv.config();
 
 
-const ORIGIN = process.env.ORIGIN || "http://localhost:5173" || "https://ekal-three.vercel.app"
+// const ORIGIN = process.env.ORIGIN || "http://localhost:5173" || "https://ekal-three.vercel.app"
 
-
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ekal-three.vercel.app"
+];
 
 const app = express();
 app.use(express.json())
