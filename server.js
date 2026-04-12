@@ -33,7 +33,7 @@ import cors from 'cors'
 dotenv.config();
 
 
-// const ORIGIN = process.env.ORIGIN || "http://localhost:5173" || "https://ekal-three.vercel.app"
+// const ORIGIN = process.env.ORIGIN || "http://localhost:5173"
 
 
 
@@ -43,25 +43,30 @@ dotenv.config();
 //   origin: ORIGIN, // Replace with your frontend URL if different
 //   credentials: true,
 // }))
- 
 
 const allowedOrigins = [
   "http://localhost:5173",
   "https://ekal-three.vercel.app"
 ];
 
+const app = express();
+
+app.use(express.json());
+
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman
+    if (!origin) return callback(null, true); // allow Postman, server-to-server
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+      return callback(null, true);
     }
+    return callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
 }));
 
+// IMPORTANT: handle preflight requests
+app.options("*", cors());
+ 
 // Default 4000 matches Frontend/.env.development (VITE_API_BASE_URL)
 const PORT = process.env.PORT || 4000
 
