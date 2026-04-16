@@ -98,18 +98,15 @@ app.use('/api/admin/unavailability', adminUnavailabilityRoute)
 
 
 
-// app.use(
-//   "/uploads",
-//   (req, res, next) => {
-//     res.setHeader("Access-Control-Allow-Origin", "*");
-//     next();
-//   },
-//   express.static(path.resolve("uploads"))
-// );
 app.use(
   "/uploads",
-  express.static(path.join(process.cwd(), "uploads"))
+  (req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    next();
+  },
+  express.static(path.resolve("uploads"))
 );
+
 
 
 
