@@ -114,7 +114,7 @@ export const forgotPassword = async (req, res) => {
 
     // Generate 4 digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    console.log("OTP:",otp)
+    // console.log("OTP:",otp)
     const otpHash = await bcrypt.hash(otp, 10);
     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
@@ -128,7 +128,7 @@ export const forgotPassword = async (req, res) => {
     });
 
     // In a real app, send SMS here. For now, log it.
-    console.log(`OTP for ${phoneNum}: ${otp}`);
+    // console.log(`OTP for ${phoneNum}: ${otp}`);
 
     res.status(200).json({
       message: "OTP sent successfully",
@@ -204,7 +204,7 @@ export const resendOtp = async (req, res) => {
       },
     });
 
-    console.log(`Resent OTP for ${phoneNum}: ${otp}`);
+    // console.log(`Resent OTP for ${phoneNum}: ${otp}`);
 
     res.status(200).json({
       message: "OTP resent successfully",

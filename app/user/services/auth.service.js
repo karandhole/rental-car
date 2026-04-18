@@ -24,8 +24,8 @@ export const requestOTPService = async (phoneNum) => {
     },
   });
 
-  console.log("WhatsApp OTP sent to:", phoneNum);
-  console.log("OTP (dev only):", otp);
+  // console.log("WhatsApp OTP sent to:", phoneNum);
+  // console.log("OTP (dev only):", otp);
 
   return user.id;
 };
