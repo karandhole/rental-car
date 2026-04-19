@@ -33,16 +33,34 @@ import cors from 'cors'
 dotenv.config();
 
 
-const ORIGIN = process.env.ORIGIN || "http://localhost:5173"
+// const ORIGIN = process.env.ORIGIN || "http://localhost:5173"
+const allowedOrigins = process.env.ORIGIN
+  ? process.env.ORIGIN.split(",")
+  : ["http://localhost:5173"];
 
 
 
 const app = express();
 app.use(express.json())
-app.use(cors({
-  origin: ORIGIN, // Replace with your frontend URL if different
-  credentials: true,
-}))
+// app.use(cors({
+//   origin: ORIGIN, // Replace with your frontend URL if different
+//   credentials: true,
+// }))
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow server-to-server / Postman requests
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 
  
