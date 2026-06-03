@@ -31,6 +31,7 @@ export const verifyPayment = async (req, res) => {
     bookingId,
     userId,
     amount,
+    paymentType = "BOOKING",
   } = req.body;
 
   // HMAC signature check
@@ -48,6 +49,7 @@ export const verifyPayment = async (req, res) => {
       const payment = await prisma.payment.create({
         data: {
           bookingId,
+          paymentType,
           userId,
           razorpayOrderId: razorpay_order_id,
           razorpayPaymentId: razorpay_payment_id,
@@ -75,6 +77,7 @@ export const verifyPayment = async (req, res) => {
         await prisma.payment.create({
           data: {
             bookingId,
+            paymentType,
             userId,
             razorpayOrderId: razorpay_order_id,
             razorpayPaymentId: razorpay_payment_id || null,
@@ -97,7 +100,7 @@ export const verifyPayment = async (req, res) => {
 export const getPaymentByBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const payment = await prisma.payment.findUnique({
+    const payment = await prisma.payment.findFirst({
       where: { bookingId },
     });
     if (!payment) {
@@ -151,7 +154,7 @@ export const downloadInvoiceByBooking = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    const payment = await prisma.payment.findUnique({
+    const payment = await prisma.payment.findFirst({
       where: { bookingId },
       include: {
         user: true,

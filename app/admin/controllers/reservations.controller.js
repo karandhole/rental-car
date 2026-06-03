@@ -4,7 +4,7 @@ const bookingInclude = {
   car: true,
   user: true,
   pricing: true,
-  payment: true,
+  payments: true,
   coupon: true,
 };
 

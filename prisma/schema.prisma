@@ -208,6 +208,10 @@ model Booking {
   duration        DurationType
   totalPrice      Int
 
+  originalPrice   Float?   @default(0)
+  extendPrice     Float?   @default(0)
+  extendHours     Float?   @default(0)
+
   bookingType     BookingType
 
   deliveryAddress String?
@@ -230,7 +234,7 @@ model Booking {
   distanceKM      Float?
   deliveryFee     Float?
 
-  payment         Payment?
+  payments         Payment[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -306,7 +310,8 @@ enum PaymentStatus {
 model Payment {
   id                   String        @id @default(auto()) @map("_id") @db.ObjectId
 
-  bookingId            String        @unique @db.ObjectId
+  bookingId            String        @db.ObjectId
+  paymentType          String        @default("BOOKING")
   booking              Booking       @relation(fields: [bookingId], references: [id])
 
   userId               String        @db.ObjectId

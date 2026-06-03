@@ -121,6 +121,9 @@ export const createBooking = async (req, res) => {
           userId: finalUserId,
           duration: finalDuration,
           totalPrice: resolvedTotal,
+          originalPrice: resolvedTotal,
+          extendPrice: 0,
+          extendHours: 0,
           bookingType: bookingType?.toUpperCase() || "DELIVERY",
           deliveryAddress: finalDeliveryAddress,
           returnAddress: finalReturnAddress,
@@ -226,6 +229,9 @@ export const extendBooking = async (req, res) => {
         pickupDate: true,
         returnDate: true,
         status: true,
+        totalPrice: true,
+        originalPrice: true,
+        extendPrice: true,
       },
     });
 
@@ -243,6 +249,48 @@ export const extendBooking = async (req, res) => {
 
     const pickup = new Date(booking.pickupDate);
     const currentReturn = new Date(booking.returnDate);
+
+    const diffMs =
+      newReturnDate.getTime() -
+      currentReturn.getTime();
+
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    let percentage = 0;
+
+    if (diffHours >= 24) {
+      percentage = 100;
+    } else if (diffHours >= 12) {
+      percentage = 75;
+    } else if (diffHours >= 6) {
+      percentage = 45;
+    } else if (diffHours >= 4) {
+      percentage = 35;
+    } else if (diffHours >= 3) {
+      percentage = 20;
+    } else if (diffHours >= 2) {
+      percentage = 12;
+    } else if (diffHours >= 1) {
+      percentage = 8;
+    }
+
+    const extendPrice =
+      ((booking.originalPrice ||
+        booking.totalPrice) *
+        percentage) / 100;
+
+    const basePrice =
+      booking.originalPrice ||
+      booking.totalPrice;
+
+    const oldExtendPrice =
+      booking.extendPrice || 0;
+
+    const finalExtendPrice =
+      oldExtendPrice + extendPrice;
+
+    const finalTotal =
+      basePrice + finalExtendPrice;
 
     if (newReturnDate.getTime() <= currentReturn.getTime()) {
       return res.status(400).json({
@@ -278,7 +326,21 @@ export const extendBooking = async (req, res) => {
       }
       return tx.booking.update({
         where: { id: booking.id },
-        data: { returnDate: newReturnDate },
+        data: {
+          returnDate: newReturnDate,
+
+          originalPrice: basePrice,
+
+          extendHours: diffHours,
+
+          extendPrice: Number(
+            Math.round(finalExtendPrice)
+          ),
+
+          totalPrice: Number(
+            Math.round(finalTotal)
+          ),
+        },
         include: { car: true, pricing: true },
       });
     });
@@ -304,7 +366,7 @@ export const getBookingById = async (req, res) => {
       include: {
         car: true,
         pricing: true,
-        payment: true,
+        payments: true,
       },
     });
     if (!booking) {
