@@ -5,9 +5,9 @@ import { generateTokens } from "../../utils/token.util.js";
 
 export const createCarPartner = async (req, res) => {
   try {
-    const { name,phoneNum,password} = req.body;
+    const { name, email, phoneNum, password } = req.body;
 
-    if (!name || !phoneNum || !password) {
+    if (!name || !email || !phoneNum || !password) {
       return res.status(400).json({
         message: "Name, Phone Number and password required"
       });
@@ -23,11 +23,28 @@ export const createCarPartner = async (req, res) => {
       });
     }
 
+    const lastPartner = await prisma.carPartner.findFirst({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    let nextNumber = 1;
+
+    if (lastPartner?.partnerCode) {
+      nextNumber =
+        parseInt(lastPartner.partnerCode.replace("EDCP", "")) + 1;
+    }
+
+    const partnerCode = `EDCP${String(nextNumber).padStart(4, "0")}`;
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const partner = await prisma.carPartner.create({
       data: {
+        partnerCode,
         name,
+        email,
         phoneNum,
         password: hashedPassword,
       }
@@ -36,6 +53,7 @@ export const createCarPartner = async (req, res) => {
     res.status(201).json({
       message: "Car Partner created successfully",
       partnerId: partner.id,
+      partnerCode: partner.partnerCode,
       phoneNum,
     });
 
@@ -76,7 +94,7 @@ export const carPartnerLogin = async (req, res) => {
       });
     }
 
-    const token = generateTokens(partner.id,"CAR_PARTNER");
+    const token = generateTokens(partner.id, "CAR_PARTNER");
 
     res.status(200).json({
       message: "Login successful",

@@ -29,10 +29,12 @@ model Admin {
 
 model CarPartner {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  partnerCode  String   @unique
 
   name         String?
   phoneNum     String   @unique
-  email        String?
+  email        String? 
 
 
   status       String  @default("Active")
@@ -158,8 +160,17 @@ model Car {
 
   isAvailable   Boolean  @default(true)
 
+   operationalStatus CarOperationalStatus @default(NONE)
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+enum CarOperationalStatus {
+  NONE
+  UNDER_MAINTENANCE
+  DAMAGED
+  PARTNER_USE
 }
 
 model Pricing {
@@ -296,6 +307,7 @@ enum BookingType {
 enum BookingStatus {
   PENDING
   CONFIRMED
+  IN_RENTAL
   CANCELLED
   COMPLETED
 }

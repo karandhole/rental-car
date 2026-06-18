@@ -1,4 +1,5 @@
 import express from 'express'
+import "./cron/bookingStatusCron.js";
 import dotenv from 'dotenv'
 import path from 'path'
 import {router as authRoute} from './app/user/routes/auth.route.js';

@@ -2,7 +2,7 @@
  * Turnaround buffer around each rental window (pickup prep + return processing).
  * Used consistently for search overlap checks and calendar display.
  */
-export const BOOKING_BUFFER_MS = 60 * 60 * 1000; // 1 hour
+export const BOOKING_BUFFER_MS = 2 * 60 * 60 * 1000; // 2 hour
 
 export function expandRangeWithBuffer(start, end) {
   const s = start instanceof Date ? start : new Date(start);

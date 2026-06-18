@@ -35,7 +35,17 @@ function computeCarOperationalStatus(car, requests, now = new Date()) {
     .sort((a, b) => new Date(a.fromDateTime) - new Date(b.fromDateTime));
   if (future.length) return "Upcoming";
 
+  if (car.operationalStatus === "UNDER_MAINTENANCE")
+    return "Under Maintenance";
+
+  if (car.operationalStatus === "DAMAGED")
+    return "Damaged";
+
+  if (car.operationalStatus === "PARTNER_USE")
+    return "Partner Use";
+
   if (car.isAvailable === false) return "Inactive";
+
   return "Active";
 }
 
@@ -84,6 +94,8 @@ export const createAdminCar = async (req, res) => {
         seating: Number(req.body.seating) || 4,
         color: req.body.color || "White",
         hexCode: req.body.hexCode || "#FFFFFF",
+        operationalStatus:
+          req.body.operationalStatus || "NONE",
         category: req.body.category || null,
         location: req.body.location || null,
         carNumber: req.body.carNumber?.trim() || null,
@@ -175,11 +187,11 @@ export const listAdminCars = async (req, res) => {
         operationalStatus,
         pendingUnavailability: pending
           ? {
-              id: pending.id,
-              reason: pending.reason,
-              fromDateTime: pending.fromDateTime,
-              toDateTime: pending.toDateTime,
-            }
+            id: pending.id,
+            reason: pending.reason,
+            fromDateTime: pending.fromDateTime,
+            toDateTime: pending.toDateTime,
+          }
           : null,
       };
     });
@@ -219,11 +231,11 @@ export const getAdminCar = async (req, res) => {
         operationalStatus,
         pendingUnavailability: pending
           ? {
-              id: pending.id,
-              reason: pending.reason,
-              fromDateTime: pending.fromDateTime,
-              toDateTime: pending.toDateTime,
-            }
+            id: pending.id,
+            reason: pending.reason,
+            fromDateTime: pending.fromDateTime,
+            toDateTime: pending.toDateTime,
+          }
           : null,
       },
     });
@@ -237,7 +249,7 @@ const UPDATABLE_FIELDS = [
   "name", "description", "brand", "modelYear", "featured",
   "transmission", "fuelType", "powerType", "mileageKm",
   "seating", "color", "hexCode", "category", "location", "features",
-  "specifications", "isAvailable", "isVerified", "ac", "engine", "brakes", "doors",
+  "specifications", "isAvailable", "isVerified", "operationalStatus", "ac", "engine", "brakes", "doors",
   "carNumber", "plateNumber", "airBags",
 ];
 

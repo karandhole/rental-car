@@ -42,6 +42,19 @@ export const createBooking = async (req, res) => {
     const finalPickupDate = pickupDate || startDate;
     const finalReturnDate = returnDate || endDate;
 
+    const start = new Date(finalPickupDate);
+    const end = new Date(finalReturnDate);
+
+    const totalHours =
+      (end.getTime() - start.getTime()) /
+      (1000 * 60 * 60);
+
+    if (totalHours < 4) {
+      return res.status(400).json({
+        message: "Minimum booking duration is 4 hours.",
+      });
+    }
+
     // Extract duration from pricing array if missing
     let finalDuration = duration;
     if (!finalDuration) {
@@ -63,8 +76,13 @@ export const createBooking = async (req, res) => {
     }
     const carBookingCheck = await prisma.car.findUnique({
       where: { id: carId },
-      select: { isVerified: true },
+      select: { isVerified: true, operationalStatus: true, },
     });
+    if (carBookingCheck.operationalStatus !== "NONE") {
+      return res.status(400).json({
+        message: `Car unavailable: ${carBookingCheck.operationalStatus}`,
+      });
+    }
     if (!carBookingCheck) {
       return res.status(400).json({ message: "Car not found." });
     }
