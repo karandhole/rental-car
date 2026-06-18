@@ -32,7 +32,7 @@ export const getReservations = async (req, res) => {
                     },
                 },
                 pricing: true,
-                payment: true,
+                payments: true,
             },
             orderBy: {
                 createdAt: "desc",
