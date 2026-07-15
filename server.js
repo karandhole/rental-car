@@ -1,5 +1,5 @@
 import express from 'express'
-import "./cron/bookingStatusCron.js";
+//import "./cron/bookingStatusCron.js";
 import dotenv from 'dotenv'
 import path from 'path'
 import {router as authRoute} from './app/user/routes/auth.route.js';
@@ -29,6 +29,8 @@ import contactRoute from './app/user/routes/contact.route.js'
 import adminCarRoute from './app/admin/routes/car.route.js'
 import adminSeasonalPricingRoute from './app/admin/routes/seasonalPricing.route.js'
 import adminPaymentRoute from './app/admin/routes/payment.route.js'
+import employeeRoute from "./app/admin/routes/employee.route.js";
+import adminRideRoute from "./app/admin/routes/ride.route.js";
 import cors from 'cors'
 
 dotenv.config();
@@ -109,6 +111,8 @@ app.use('/api/car-partner/unavailability', carPartnerUnavailabilityRoute)
 
 // admin unavailability
 app.use('/api/admin/unavailability', adminUnavailabilityRoute)
+app.use("/api/admin/employees", employeeRoute);
+app.use('/api/admin/rides', adminRideRoute);
 
 
 

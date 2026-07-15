@@ -1,4 +1,22 @@
 import prisma from '../../../lib/db.config.js';
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: true,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+// try {
+//     await transporter.verify();
+//     console.log("SMTP Connected");
+// } catch (err) {
+//     console.error(err);
+// }
 
 export const createContactMessage = async (req, res) => {
     try {
@@ -17,10 +35,88 @@ export const createContactMessage = async (req, res) => {
             return res.status(400).json({ error: "Invalid phone number. Must be 10 digits." });
         }
 
+        // Save in database
         const contactMessage = await prisma.contactMessage.create({
-            data: { name, email, phone, message }
+            data: {
+                name,
+                email,
+                phone,
+                message,
+            },
         });
-        res.status(201).json(contactMessage);
+
+        res.status(200).json({
+            success: true,
+            message: "Enquiry sent successfully",
+            data: contactMessage,
+        });
+
+
+        // --------------------
+        // Send Admin Email
+        // --------------------
+        try {
+            await transporter.sendMail({
+                from: `"Ekalo Drive" <${process.env.SMTP_USER}>`,
+                to: process.env.ADMIN_EMAIL,
+                subject: "🚗 New Contact Enquiry",
+                html: `
+      <h2>New Contact Enquiry</h2>
+
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+
+      <p><strong>Message:</strong></p>
+      <p>${message}</p>
+    `,
+            });
+
+            console.log("✅ Admin email sent");
+        } catch (err) {
+            console.error("❌ Admin email failed:", err.message);
+        }
+
+        // --------------------
+        // Customer Auto Reply
+        // --------------------
+        try {
+            await transporter.sendMail({
+                from: `"Ekalo Drive Support" <${process.env.SMTP_USER}>`,
+                to: email,
+                subject: "Thank you for contacting Ekalo Drive",
+                html: `
+      <div style="font-family:Arial,sans-serif">
+        <h2>Thank You for Contacting Ekalo Drive 🚗</h2>
+
+        <p>Dear ${name},</p>
+
+        <p>
+          Thank you for contacting <strong>Ekalo Drive</strong>.
+          We have received your enquiry successfully.
+        </p>
+
+        <p>
+          Our support team will contact you shortly.
+        </p>
+
+        <hr>
+
+        <p>📧 support@ekalodrive.com</p>
+
+        <p>
+          Regards,<br/>
+          <strong>Ekalo Drive Team</strong>
+        </p>
+      </div>
+    `,
+            });
+
+            console.log("✅ Auto reply sent");
+        } catch (err) {
+            console.error("❌ Auto reply failed:", err.message);
+        }
+
     } catch (error) {
         console.error("Error creating contact message:", error);
         res.status(500).json({ error: "Internal Server Error" });

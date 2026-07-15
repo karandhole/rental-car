@@ -127,6 +127,8 @@ export function buildInvoicePdf(doc, opts) {
     // Amounts
     lineDescription,
     lineQty,
+    originalPrice,
+    extendPrice,
     subtotal,
     gstAmount,
     total,
@@ -364,21 +366,65 @@ export function buildInvoicePdf(doc, opts) {
     });
   };
 
-  drawAmtRow("Rental Amount", formatMoneyShort(subtotal, currency), payTop + 4);
-  // Divider
-  doc.moveTo(amtX, payTop + 22).lineTo(R, payTop + 22).lineWidth(0.5).strokeColor(C.border).stroke();
-  drawAmtRow("Delivery Charge", `+ ${formatMoneyShort(deliveryCharge, currency)}`, payTop + 30);
+  let y = payTop + 4;
 
-  if (gstPercent > 0) {
-    doc.moveTo(amtX, payTop + 48).lineTo(R, payTop + 48).lineWidth(0.5).strokeColor(C.border).stroke();
-    drawAmtRow(`GST (${gstPercent}%)`, formatMoneyShort(gstAmount, currency), payTop + 56);
+  drawAmtRow(
+    "Rental Amount",
+    formatMoneyShort(originalPrice, currency),
+    y
+  );
+
+  y += 26;
+
+  if (extendPrice > 0) {
+    doc.moveTo(amtX, y - 8).lineTo(R, y - 8).stroke();
+
+    drawAmtRow(
+      "Extend Charges",
+      formatMoneyShort(extendPrice, currency),
+      y
+    );
+
+    y += 26;
   }
 
+  doc.moveTo(amtX, y - 8).lineTo(R, y - 8).stroke();
+
+  drawAmtRow(
+    "Subtotal",
+    formatMoneyShort(subtotal, currency),
+    y
+  );
+
+  y += 26;
+
+  if (deliveryCharge > 0) {
+    doc.moveTo(amtX, y - 8).lineTo(R, y - 8).stroke();
+
+    drawAmtRow(
+      "Delivery Charge",
+      `+ ${formatMoneyShort(deliveryCharge, currency)}`,
+      y
+    );
+
+    y += 26;
+  }
+
+  if (gstPercent > 0) {
+    doc.moveTo(amtX, y - 8).lineTo(R, y - 8).stroke();
+
+    drawAmtRow(
+      `GST (${gstPercent}%)`,
+      formatMoneyShort(gstAmount, currency),
+      y
+    );
+
+    y += 26;
+  }
   // ═══════════════════════════════════════════════════════════════════════════
   // 5. TOTAL BAR (amber highlight)
   // ═══════════════════════════════════════════════════════════════════════════
-  const gstExtra = gstPercent > 0 ? 34 : 0;
-  const totalBarTop = payTop + 78 + gstExtra;
+  const totalBarTop = y + 18;
   const totalBarH = 30;
   doc.rect(L, totalBarTop, pageW, totalBarH).fill(C.amber);
   doc

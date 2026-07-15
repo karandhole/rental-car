@@ -6,6 +6,17 @@ const bookingInclude = {
   pricing: true,
   payments: true,
   coupon: true,
+  rideStart: {
+    include: {
+      admin: true,
+    },
+  },
+
+  rideEnd: {
+    include: {
+      admin: true,
+    },
+  },
 };
 
 export const listAdminReservations = async (req, res) => {

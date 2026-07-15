@@ -74,7 +74,7 @@ export const login = async (req, res) => {
       });
     }
 
-    const {accessToken,refreshToken} = generateTokens(admin.id,"ADMIN");
+    const {accessToken,refreshToken} = generateTokens(admin.id, admin.role);
 
     res.json({
       message: "Login successful",
@@ -82,6 +82,8 @@ export const login = async (req, res) => {
       admin: {
         id: admin.id,
         phoneNum: admin.phoneNum,
+        role: admin.role,
+        name: admin.name,
       }
     });
 

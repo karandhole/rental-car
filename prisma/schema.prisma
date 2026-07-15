@@ -7,20 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model Admin {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  name String @default("Admin")
+  name     String  @default("Admin")
+  email    String? @unique
+  phoneNum String  @unique
+  password String
 
-  phoneNum     String    @unique
-  password     String
-  cars         Car[]
+  role         AdminRole @default(SUPER_ADMIN)
+  status       String    @default("ACTIVE")
+  employeeCode String?   @unique
+  otpHash      String?
+  otpExpiresAt DateTime?
+  otpAttempts  Int       @default(0)
+
+  cars    Car[]
   coupons Coupon[]
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  rideStarts RideStart[]
+
+  rideEnds RideEnd[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  EMP_ADMIN
 }
 
 //////////////////////
@@ -28,64 +43,61 @@ model Admin {
 //////////////////////
 
 model CarPartner {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  
-  partnerCode  String   @unique
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  name         String?
-  phoneNum     String   @unique
-  email        String? 
+  partnerCode String @unique
 
+  name     String?
+  phoneNum String  @unique
+  email    String?
 
-  status       String  @default("Active")
+  status String @default("Active")
 
-  password     String
+  password String
 
-  address      String?
+  address String?
 
-  cars         Car[]
+  cars                   Car[]
   unavailabilityRequests CarUnavailabilityRequest[]
 
-  otpHash       String?
-  otpExpiresAt  DateTime?
-  otpAttempts   Int      @default(0)
+  otpHash      String?
+  otpExpiresAt DateTime?
+  otpAttempts  Int       @default(0)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-
 model User {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  phoneNum      String   @unique
-  firstName     String?
-  lastName      String?
-  email         String?
+  phoneNum        String  @unique
+  firstName       String?
+  lastName        String?
+  email           String?
   dlNumber        String?
   aadhaarPdf      String?
   addressProofPdf String?
   dlPdf           String?
-  isBlocked     Boolean  @default(false)
+  isBlocked       Boolean @default(false)
 
-  isVerified    Boolean  @default(false)
+  isVerified Boolean @default(false)
 
-  otpHash       String?
-  otpExpiresAt  DateTime?
-  otpAttempts   Int      @default(0)
+  otpHash      String?
+  otpExpiresAt DateTime?
+  otpAttempts  Int       @default(0)
 
-  refreshToken  String?
-  lastLoginAt   DateTime?
-  address   Address?
+  refreshToken String?
+  lastLoginAt  DateTime?
+  address      Address?
 
-  bookings      Booking[]
-  reviews       Review[]
-  payments      Payment[]
+  bookings Booking[]
+  reviews  Review[]
+  payments Payment[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
 
 type Address {
   addressLine String
@@ -95,8 +107,6 @@ type Address {
   pincode     String
 }
 
-
-
 type Specification {
   title String
   value String
@@ -104,66 +114,63 @@ type Specification {
 }
 
 model Car {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-   
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
   // Basic Info
-  name          String
-  description   String
+  name           String
+  description    String
   specifications Specification[]
-  features String[]
+  features       String[]
 
-  
-  brand         String
-  modelYear     Int
-  featured      Boolean  @default(false)
+  brand     String
+  modelYear Int
+  featured  Boolean @default(false)
 
   /// Fleet / internal reference (optional)
-  carNumber     String?
+  carNumber   String?
   /// Registration plate
-  plateNumber   String?
-  airBags       Int?
+  plateNumber String?
+  airBags     Int?
 
   // Images & Documents
-  images        String[]
-  documents     String[]
-  thumbnail     String?
-  isVerified    Boolean  @default(false)
+  images     String[]
+  documents  String[]
+  thumbnail  String?
+  isVerified Boolean  @default(false)
 
-
-  partnerId     String?      @db.ObjectId
-  partner       CarPartner?  @relation(fields: [partnerId], references: [id])
-  adminId     String?      @db.ObjectId
-  admin       Admin?  @relation(fields: [adminId], references: [id])
+  partnerId String?     @db.ObjectId
+  partner   CarPartner? @relation(fields: [partnerId], references: [id])
+  adminId   String?     @db.ObjectId
+  admin     Admin?      @relation(fields: [adminId], references: [id])
 
   // Specs
-  location      String?
-  transmission  TransmissionType
-  category      String?
-  fuelType      FuelType
-  powerType     PowerType
-  ac            String?
-  engine        String?
-  brakes        String?
-  doors         Int?
-  mileageKm     Int
-  seating       Int
-  color      String
-  hexCode   String
+  location     String?
+  transmission TransmissionType
+  category     String?
+  fuelType     FuelType
+  powerType    PowerType
+  ac           String?
+  engine       String?
+  brakes       String?
+  doors        Int?
+  mileageKm    Int
+  seating      Int
+  color        String
+  hexCode      String
 
   // Relations
-  pricing          Pricing[]
-  seasonalPricing  SeasonalPricing[]
-  reviews          Review[]
-  bookings         Booking[]
+  pricing                Pricing[]
+  seasonalPricing        SeasonalPricing[]
+  reviews                Review[]
+  bookings               Booking[]
   unavailabilityRequests CarUnavailabilityRequest[]
 
-  isAvailable   Boolean  @default(true)
+  isAvailable Boolean @default(true)
 
-   operationalStatus CarOperationalStatus @default(NONE)
+  operationalStatus CarOperationalStatus @default(NONE)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum CarOperationalStatus {
@@ -174,15 +181,15 @@ enum CarOperationalStatus {
 }
 
 model Pricing {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  carId     String   @db.ObjectId
-  car       Car      @relation(fields: [carId], references: [id])
+  carId String @db.ObjectId
+  car   Car    @relation(fields: [carId], references: [id])
 
-  duration  DurationType
-  price     Int      // price per unit
+  duration DurationType
+  price    Int // price per unit
 
-  bookings  Booking[]
+  bookings Booking[]
 
   createdAt DateTime @default(now())
 
@@ -190,87 +197,97 @@ model Pricing {
 }
 
 model Review {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  carId     String   @db.ObjectId
-  car       Car      @relation(fields: [carId], references: [id])
+  carId String @db.ObjectId
+  car   Car    @relation(fields: [carId], references: [id])
 
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 
-  rating    Int
-  comment   String?
+  rating  Int
+  comment String?
 
   createdAt DateTime @default(now())
 }
 
 model Booking {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  carId           String        @db.ObjectId
-  car             Car           @relation(fields: [carId], references: [id])
+  carId String @db.ObjectId
+  car   Car    @relation(fields: [carId], references: [id])
 
-  pricingId       String        @db.ObjectId
-  pricing         Pricing       @relation(fields: [pricingId], references: [id])
+  pricingId String  @db.ObjectId
+  pricing   Pricing @relation(fields: [pricingId], references: [id])
 
-  userId          String        @db.ObjectId
-  user            User          @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 
-  duration        DurationType
-  totalPrice      Int
+  duration   DurationType
+  totalPrice Int
 
-  originalPrice   Float?   @default(0)
-  extendPrice     Float?   @default(0)
-  extendHours     Float?   @default(0)
+  originalPrice Float? @default(0)
+  extendPrice   Float? @default(0)
+  extendHours   Float? @default(0)
 
-  bookingType     BookingType
+  bookingType BookingType
 
   deliveryAddress String?
   returnAddress   String?
-  sameReturn      Boolean       @default(false)
+  sameReturn      Boolean @default(false)
 
-  pickupDate      DateTime
-  returnDate      DateTime
+  pickupDate DateTime
+  returnDate DateTime
 
-  status              BookingStatus @default(PENDING)
-  cancellationReason  String?
-  cancelledAt         DateTime?
-  couponId        String?       @db.ObjectId
-  coupon          Coupon?       @relation(fields: [couponId], references: [id])
+  status             BookingStatus @default(PENDING)
+  cancellationReason String?
+  cancelledAt        DateTime?
+  couponId           String?       @db.ObjectId
+  coupon             Coupon?       @relation(fields: [couponId], references: [id])
 
-  color           String?
-  hexCode         String?
-  orderId         String?
-  paymentId       String?
-  distanceKM      Float?
-  deliveryFee     Float?
+  color       String?
+  hexCode     String?
+  orderId     String?
+  paymentId   String?
+  distanceKM  Float?
+  deliveryFee Float?
 
-  payments         Payment[]
+  payments Payment[]
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  rideStart RideStart?
+
+  rideEnd RideEnd?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum RideStatus {
+  STARTED
+  HOLD
+  CANCELLED
 }
 
 model Coupon {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   name         String
-  adminId      String    @db.ObjectId
-  admin        Admin     @relation(fields: [adminId], references: [id])
-  code         String    @unique
+  adminId      String   @db.ObjectId
+  admin        Admin    @relation(fields: [adminId], references: [id])
+  code         String   @unique
   description  String?
-  type         String    // "1" = percentage, "2" = fixed (legacy rows may use words)
+  type         String // "1" = percentage, "2" = fixed (legacy rows may use words)
   value        Float
   startDate    DateTime
   endDate      DateTime
-  limit        Int?      // Null for unlimited
-  usedCount    Int       @default(0)
-  status       String    @default("Active")
+  limit        Int? // Null for unlimited
+  usedCount    Int      @default(0)
+  status       String   @default("Active")
   applicableTo String?
 
-  bookings     Booking[]
+  bookings Booking[]
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum DurationType {
@@ -320,26 +337,26 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  bookingId            String        @db.ObjectId
-  paymentType          String        @default("BOOKING")
-  booking              Booking       @relation(fields: [bookingId], references: [id])
+  bookingId   String  @db.ObjectId
+  paymentType String  @default("BOOKING")
+  booking     Booking @relation(fields: [bookingId], references: [id])
 
-  userId               String        @db.ObjectId
-  user                 User          @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
 
-  razorpayOrderId      String
-  razorpayPaymentId    String?
-  razorpaySignature    String?
+  razorpayOrderId   String
+  razorpayPaymentId String?
+  razorpaySignature String?
 
-  amount               Float
-  currency             String        @default("INR")
+  amount   Float
+  currency String @default("INR")
 
-  status               PaymentStatus @default(PENDING)
+  status PaymentStatus @default(PENDING)
 
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ContactMessage {
@@ -357,23 +374,23 @@ model ContactMessage {
 //////////////////////
 
 model CarUnavailabilityRequest {
-  id           String               @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  carId        String               @db.ObjectId
-  car          Car                  @relation(fields: [carId], references: [id])
+  carId String @db.ObjectId
+  car   Car    @relation(fields: [carId], references: [id])
 
-  partnerId    String               @db.ObjectId
-  partner      CarPartner           @relation(fields: [partnerId], references: [id])
+  partnerId String     @db.ObjectId
+  partner   CarPartner @relation(fields: [partnerId], references: [id])
 
   fromDateTime DateTime
   toDateTime   DateTime
   reason       String?
 
-  status       UnavailabilityStatus @default(PENDING)
-  adminNote    String?
+  status    UnavailabilityStatus @default(PENDING)
+  adminNote String?
 
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum UnavailabilityStatus {
@@ -387,22 +404,77 @@ enum UnavailabilityStatus {
 //////////////////////
 
 model SeasonalPricing {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  carId       String   @db.ObjectId
-  car         Car      @relation(fields: [carId], references: [id])
+  carId String @db.ObjectId
+  car   Car    @relation(fields: [carId], references: [id])
 
-  name        String
-  startDate   DateTime
-  endDate     DateTime
+  name      String
+  startDate DateTime
+  endDate   DateTime
 
-  hourPrice   Float?
-  dayPrice    Float?
-  weekPrice   Float?
-  monthPrice  Float?
+  hourPrice  Float?
+  dayPrice   Float?
+  weekPrice  Float?
+  monthPrice Float?
 
-  isActive    Boolean  @default(true)
+  isActive Boolean @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RideStart {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  bookingId String  @unique @db.ObjectId
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  createdBy String @db.ObjectId
+  admin     Admin  @relation(fields: [createdBy], references: [id])
+
+  rideStatus RideStatus
+
+  odometerKM     Int
+  fuelPercentage Int
+
+  remark String?
+
+  odometerImages     String[]
+  interiorImages     String[]
+  exteriorImages     String[]
+  rideDocuments      String[]
+  paymentProofImages String[]
+
+   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RideEnd {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  bookingId String  @unique @db.ObjectId
+  booking   Booking @relation(fields: [bookingId], references: [id])
+
+  createdBy String @db.ObjectId
+  admin     Admin  @relation(fields: [createdBy], references: [id])
+
+  odometerKM     Int
+  fuelPercentage Int
+
+  remark String?
+
+  odometerImages String[]
+  interiorImages String[]
+  exteriorImages String[]
+
+  rideStatus RideEndStatus
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+enum RideEndStatus {
+  COMPLETED
+  HOLD
 }

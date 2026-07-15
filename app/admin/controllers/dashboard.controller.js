@@ -50,9 +50,9 @@ export const getAdminDashboard = async (req, res) => {
     const adminId = req.admin?.id;
     const admin = adminId
       ? await prisma.admin.findUnique({
-          where: { id: adminId },
-          select: { name: true, phoneNum: true },
-        })
+        where: { id: adminId },
+        select: { name: true, phoneNum: true },
+      })
       : null;
 
     const now = new Date();
@@ -62,7 +62,30 @@ export const getAdminDashboard = async (req, res) => {
     const prevWeekStart = new Date(startOfWeek);
     prevWeekStart.setDate(prevWeekStart.getDate() - 7);
     const prevWeekEnd = new Date(startOfWeek.getTime() - 1);
+    let rideStartCount = 0;
+    let rideEndCount = 0;
 
+    if (req.admin.role === "SUPER_ADMIN") {
+
+      rideStartCount = await prisma.rideStart.count();
+
+      rideEndCount = await prisma.rideEnd.count();
+
+    } else {
+
+      rideStartCount = await prisma.rideStart.count({
+        where: {
+          createdBy: req.admin.id,
+        },
+      });
+
+      rideEndCount = await prisma.rideEnd.count({
+        where: {
+          createdBy: req.admin.id,
+        },
+      });
+
+    }
     const [
       totalCars,
       totalUsers,
@@ -286,6 +309,8 @@ export const getAdminDashboard = async (req, res) => {
         upcoming,
         totalReservations: totalBookings,
         reservationsWeekChange: percentChange(bookingsThisWeek.length, bookingsPrevWeek.length),
+        rideStartCount,
+        rideEndCount,
         totalEarnings,
         earningsWeekChange: percentChange(earningsThisWeek, earningsPrevWeek),
         carsWeekChange: percentChange(carsThisWeek, carsPrevWeek),
@@ -330,15 +355,15 @@ export const getAdminDashboard = async (req, res) => {
       },
       newlyAddedCar: newlyAdded
         ? {
-            id: newlyAdded.id,
-            name: newlyAdded.name,
-            category: newlyAdded.category || newlyAdded.brand,
-            thumbnail: newlyAdded.thumbnail || newlyAdded.images?.[0] || null,
-            fuelType: newlyAdded.fuelType,
-            seating: newlyAdded.seating,
-            powerType: newlyAdded.powerType,
-            dayPrice,
-          }
+          id: newlyAdded.id,
+          name: newlyAdded.name,
+          category: newlyAdded.category || newlyAdded.brand,
+          thumbnail: newlyAdded.thumbnail || newlyAdded.images?.[0] || null,
+          fuelType: newlyAdded.fuelType,
+          seating: newlyAdded.seating,
+          powerType: newlyAdded.powerType,
+          dayPrice,
+        }
         : null,
       recentBookings,
       topCustomers,

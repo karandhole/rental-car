@@ -6,7 +6,7 @@ import {
   parseRentalWindow,
 } from "../../utils/bookingAvailability.js";
 
-const BLOCKING_BOOKING_STATUSES = ["PENDING", "CONFIRMED"];
+const BLOCKING_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "IN_RENTAL",];
 
 function buildAvailabilityPayload(bookings, unavailabilityRows) {
   const blocks = [];
@@ -62,13 +62,13 @@ export const createCar = async (req, res) => {
         transmission: req.body.transmission, // enum string is OK
         fuelType: req.body.fuelType,
         powerType: req.body.powerType,
-        description:req.body.description,
+        description: req.body.description,
         features,
         specifications,
         mileageKm: Number(req.body.mileageKm),
         seating: Number(req.body.seating),
-        color:req.body.color,
-        hexCode:req.body.hexCode,
+        color: req.body.color,
+        hexCode: req.body.hexCode,
         images: images,
         thumbnail: thumbnail,
       },
@@ -88,7 +88,7 @@ export const createCar = async (req, res) => {
 };
 
 /** Bookings that count toward “popularity” (excludes cancelled only). */
-const POPULAR_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "COMPLETED"];
+const POPULAR_BOOKING_STATUSES = ["PENDING", "CONFIRMED",  "IN_RENTAL", "COMPLETED"];
 
 /**
  * Top verified cars by booking volume, with aggregate review stats for the home grid.
@@ -114,15 +114,53 @@ export const getPopularCars = async (req, res) => {
       },
     });
 
+    const now = new Date();
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        status: {
+          in: ["PENDING", "CONFIRMED", "IN_RENTAL"],
+        },
+      },
+      select: {
+        carId: true,
+        pickupDate: true,
+        returnDate: true,
+        status: true,
+      },
+    });
+
+    const unavailableCars = new Set();
+
+    for (const booking of bookings) {
+
+      // Ride started
+      if (booking.status === "IN_RENTAL") {
+        unavailableCars.add(booking.carId);
+        continue;
+      }
+
+      const blockedUntil = new Date(
+        booking.returnDate.getTime() + BOOKING_BUFFER_MS
+      );
+
+      if (
+        booking.pickupDate <= now &&
+        blockedUntil > now
+      ) {
+        unavailableCars.add(booking.carId);
+      }
+    }
+
     const scored = cars.map((car) => {
       const bookingCount = car._count.bookings;
       const reviewCount = car.reviews.length;
       const averageRating =
         reviewCount > 0
           ? Math.round(
-              (car.reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) *
-                10
-            ) / 10
+            (car.reviews.reduce((s, r) => s + r.rating, 0) / reviewCount) *
+            10
+          ) / 10
           : null;
       return { car, bookingCount, averageRating, reviewCount };
     });
@@ -144,6 +182,7 @@ export const getPopularCars = async (req, res) => {
         bookingCount,
         averageRating,
         reviewCount,
+        isAvailable: !unavailableCars.has(car.id),
       };
     });
 
@@ -287,10 +326,34 @@ export const getCarById = async (req, res) => {
 
     const { bookings, unavailabilityRequests, ...rest } = car;
     const availability = buildAvailabilityPayload(bookings, unavailabilityRequests);
+    const now = new Date();
+
+    let isAvailable = true;
+
+    for (const booking of bookings) {
+
+      if (booking.status === "IN_RENTAL") {
+        isAvailable = false;
+        break;
+      }
+
+      const blockedUntil = new Date(
+        booking.returnDate.getTime() + BOOKING_BUFFER_MS
+      );
+
+      if (
+        booking.pickupDate <= now &&
+        blockedUntil > now
+      ) {
+        isAvailable = false;
+        break;
+      }
+    }
 
     res.status(200).json({
       ...rest,
       availability,
+      isAvailable,
     });
   } catch (error) {
     res.status(500).json({

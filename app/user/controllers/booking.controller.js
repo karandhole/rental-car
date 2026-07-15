@@ -3,6 +3,9 @@ import {
   computeCouponDiscount,
   getCouponEligibilityError,
 } from "../../../lib/couponValidation.js";
+import {
+  bookingBlocksOverlapSearch,
+} from "../../utils/bookingAvailability.js";
 
 export const createBooking = async (req, res) => {
   try {
@@ -89,6 +92,34 @@ export const createBooking = async (req, res) => {
     if (!carBookingCheck.isVerified) {
       return res.status(400).json({
         message: "This vehicle is not available for booking.",
+      });
+    }
+
+    const existingBookings = await prisma.booking.findMany({
+      where: {
+        carId,
+        status: {
+          in: ["PENDING", "CONFIRMED"],
+        },
+      },
+      select: {
+        pickupDate: true,
+        returnDate: true,
+      },
+    });
+
+    const conflict = existingBookings.find((booking) =>
+      bookingBlocksOverlapSearch(
+        booking.pickupDate,
+        booking.returnDate,
+        new Date(finalPickupDate),
+        new Date(finalReturnDate)
+      )
+    );
+
+    if (conflict) {
+      return res.status(400).json({
+        message: "This vehicle is already booked for the selected time.",
       });
     }
 
@@ -279,17 +310,17 @@ export const extendBooking = async (req, res) => {
     if (diffHours >= 24) {
       percentage = 100;
     } else if (diffHours >= 12) {
-      percentage = 75;
+      percentage = 80;
     } else if (diffHours >= 6) {
-      percentage = 45;
+      percentage = 55;
     } else if (diffHours >= 4) {
-      percentage = 35;
+      percentage = 40;
     } else if (diffHours >= 3) {
-      percentage = 20;
+      percentage = 25;
     } else if (diffHours >= 2) {
-      percentage = 12;
+      percentage = 18;
     } else if (diffHours >= 1) {
-      percentage = 8;
+      percentage = 12;
     }
 
     const extendPrice =

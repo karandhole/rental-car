@@ -37,7 +37,7 @@ export const createCarPartner = async (req, res) => {
     }
 
     const partnerCode = `EDCP${String(nextNumber).padStart(4, "0")}`;
-
+  
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const partner = await prisma.carPartner.create({

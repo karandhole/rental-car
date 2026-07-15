@@ -9,7 +9,8 @@ export const authMiddleware = (req,res,next)=>{
             });
         }
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-        if(decodedToken.role !== "ADMIN"){
+        if(decodedToken.role !== "SUPER_ADMIN" &&
+           decodedToken.role !== "EMP_ADMIN"){
             return res.status(401).json({
                 message: "Unauthorized"
             });

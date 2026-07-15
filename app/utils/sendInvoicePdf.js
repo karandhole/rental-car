@@ -12,7 +12,18 @@ function paymentToInvoiceNo(id) {
  * @param {number} gstPercent 0 or 18
  */
 export function streamInvoicePdfForPaymentRecord(payment, res, gstPercent) {
-  const amount = Number(payment.amount);
+  const booking = payment.booking;
+
+  const originalPrice = Number(
+    booking?.originalPrice && booking.originalPrice > 0
+      ? booking.originalPrice
+      : payment.amount
+  );
+
+  const extendPrice = Number(booking?.extendPrice || 0);
+
+  const amount = originalPrice + extendPrice;
+
   const currency = payment.currency || "INR";
 
   let subtotal;
@@ -29,7 +40,6 @@ export function streamInvoicePdfForPaymentRecord(payment, res, gstPercent) {
     total = Math.round((subtotal + gstAmount) * 100) / 100;
   }
 
-  const booking = payment.booking;
   const car = booking?.car;
   const user = payment.user;
 
@@ -70,7 +80,6 @@ export function streamInvoicePdfForPaymentRecord(payment, res, gstPercent) {
 
   const doc = new PDFDocument({ margin: 50, size: "A4" });
   doc.pipe(res);
-
   buildInvoicePdf(doc, {
     companyName,
     companyAddress,
@@ -98,6 +107,8 @@ export function streamInvoicePdfForPaymentRecord(payment, res, gstPercent) {
     // Line items (legacy)
     lineDescription,
     lineQty,
+    originalPrice,   
+    extendPrice, 
     subtotal,
     gstAmount,
     total,
