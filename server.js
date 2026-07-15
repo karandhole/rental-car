@@ -49,6 +49,7 @@ app.use(express.json())
 //   origin: ORIGIN, // Replace with your frontend URL if different
 //   credentials: true,
 // }))
+
 app.use(
   cors({
     origin: function (origin, callback) {
