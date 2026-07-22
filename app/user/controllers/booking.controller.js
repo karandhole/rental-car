@@ -281,6 +281,7 @@ export const extendBooking = async (req, res) => {
         totalPrice: true,
         originalPrice: true,
         extendPrice: true,
+        extendHours: true,
       },
     });
 
@@ -290,9 +291,9 @@ export const extendBooking = async (req, res) => {
     if (booking.userId !== finalUserId) {
       return res.status(403).json({ message: "You can only extend your own booking." });
     }
-    if (booking.status !== "CONFIRMED") {
+    if (!["CONFIRMED", "IN_RENTAL"].includes(booking.status)) {
       return res.status(400).json({
-        message: "Only in-progress (confirmed) bookings can be extended.",
+        message: "Only confirmed or in-rental bookings can be extended.",
       });
     }
 
@@ -310,17 +311,17 @@ export const extendBooking = async (req, res) => {
     if (diffHours >= 24) {
       percentage = 100;
     } else if (diffHours >= 12) {
-      percentage = 80;
+      percentage = 75;
     } else if (diffHours >= 6) {
-      percentage = 55;
+      percentage = 45;
     } else if (diffHours >= 4) {
-      percentage = 40;
+      percentage = 35;
     } else if (diffHours >= 3) {
-      percentage = 25;
+      percentage = 20;
     } else if (diffHours >= 2) {
-      percentage = 18;
-    } else if (diffHours >= 1) {
       percentage = 12;
+    } else if (diffHours >= 1) {
+      percentage = 8.5;
     }
 
     const extendPrice =
@@ -334,6 +335,12 @@ export const extendBooking = async (req, res) => {
 
     const oldExtendPrice =
       booking.extendPrice || 0;
+
+    const oldExtendHours =
+      booking.extendHours || 0;
+
+    const finalExtendHours =
+      oldExtendHours + diffHours;
 
     const finalExtendPrice =
       oldExtendPrice + extendPrice;
@@ -380,7 +387,7 @@ export const extendBooking = async (req, res) => {
 
           originalPrice: basePrice,
 
-          extendHours: diffHours,
+          extendHours: finalExtendHours,
 
           extendPrice: Number(
             Math.round(finalExtendPrice)
@@ -434,12 +441,12 @@ export const getDashboardStats = async (req, res) => {
     const [bookings, payments] = await Promise.all([
       prisma.booking.findMany({
         where: { userId },
-        include: { car: { select: { name: true, images: true } }, pricing: true },
+        include: { car: { select: { name: true, images: true,thumbnail: true, } }, pricing: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.payment.findMany({
         where: { userId, status: "SUCCESS" },
-        include: { booking: { include: { car: { select: { name: true, images: true } } } } },
+        include: { booking: { include: { car: { select: { name: true, images: true,thumbnail: true, } } } } },
         orderBy: { createdAt: "desc" },
       }),
     ]);

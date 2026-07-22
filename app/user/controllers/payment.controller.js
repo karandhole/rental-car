@@ -122,7 +122,7 @@ export const getPaymentsByUser = async (req, res) => {
       include: {
         booking: {
           include: {
-            car: { select: { name: true, images: true } },
+            car: { select: { name: true, images: true,thumbnail: true, } },
           },
         },
       },
