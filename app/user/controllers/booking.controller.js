@@ -52,9 +52,9 @@ export const createBooking = async (req, res) => {
       (end.getTime() - start.getTime()) /
       (1000 * 60 * 60);
 
-    if (totalHours < 4) {
+    if (totalHours < 12) {
       return res.status(400).json({
-        message: "Minimum booking duration is 4 hours.",
+        message: "Minimum booking duration is 12 hours.",
       });
     }
 
@@ -306,23 +306,7 @@ export const extendBooking = async (req, res) => {
 
     const diffHours = diffMs / (1000 * 60 * 60);
 
-    let percentage = 0;
-
-    if (diffHours >= 24) {
-      percentage = 100;
-    } else if (diffHours >= 12) {
-      percentage = 75;
-    } else if (diffHours >= 6) {
-      percentage = 45;
-    } else if (diffHours >= 4) {
-      percentage = 35;
-    } else if (diffHours >= 3) {
-      percentage = 20;
-    } else if (diffHours >= 2) {
-      percentage = 12;
-    } else if (diffHours >= 1) {
-      percentage = 8.5;
-    }
+    let percentage = diffHours * 5.5;
 
     const extendPrice =
       ((booking.originalPrice ||
@@ -441,12 +425,12 @@ export const getDashboardStats = async (req, res) => {
     const [bookings, payments] = await Promise.all([
       prisma.booking.findMany({
         where: { userId },
-        include: { car: { select: { name: true, images: true,thumbnail: true, } }, pricing: true },
+        include: { car: { select: { name: true, images: true, thumbnail: true, } }, pricing: true },
         orderBy: { createdAt: "desc" },
       }),
       prisma.payment.findMany({
         where: { userId, status: "SUCCESS" },
-        include: { booking: { include: { car: { select: { name: true, images: true,thumbnail: true, } } } } },
+        include: { booking: { include: { car: { select: { name: true, images: true, thumbnail: true, } } } } },
         orderBy: { createdAt: "desc" },
       }),
     ]);
