@@ -223,12 +223,11 @@ export const getAdminCar = async (req, res) => {
 
     if (!car) return res.status(404).json({ message: "Car not found" });
     const reqs = car.unavailabilityRequests || [];
-    const operationalStatus = computeCarOperationalStatus(car, reqs, now);
     const pending = reqs.find((r) => r.status === "PENDING");
+
     res.status(200).json({
       data: {
         ...car,
-        operationalStatus,
         pendingUnavailability: pending
           ? {
             id: pending.id,
@@ -383,18 +382,54 @@ export const updateAdminCar = async (req, res) => {
 export const deleteAdminCar = async (req, res) => {
   try {
     const adminId = req.admin?.id;
-    if (!adminId) return res.status(403).json({ message: "Forbidden" });
+    if (!adminId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
 
-    const existing = await prisma.car.findUnique({ where: { id: req.params.id } });
-    if (!existing) return res.status(404).json({ message: "Car not found" });
+    const carId = req.params.id;
 
-    await prisma.car.delete({ where: { id: req.params.id } });
-    res.status(200).json({ message: "Car deleted" });
+    const existing = await prisma.car.findUnique({
+      where: { id: carId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ message: "Car not found" });
+    }
+
+    await prisma.$transaction(async (tx) => {
+
+      await tx.pricing.deleteMany({
+        where: { carId },
+      });
+
+
+      await tx.seasonalPricing.deleteMany({
+        where: { carId },
+      });
+
+
+      await tx.review.deleteMany({
+        where: { carId },
+      });
+
+
+      await tx.car.delete({
+        where: { id: carId },
+      });
+    });
+
+    return res.status(200).json({
+      message: "Car deleted successfully",
+    });
   } catch (error) {
-    res.status(500).json({ message: "Error deleting car", error: error.message });
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Error deleting car",
+      error: error.message,
+    });
   }
 };
-
 // ─── Toggle Availability ──────────────────────────────────────────────────────
 export const toggleCarAvailability = async (req, res) => {
   try {
