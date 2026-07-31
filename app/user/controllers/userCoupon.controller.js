@@ -66,3 +66,32 @@ export const validateCoupon = async (req, res) => {
     return res.status(500).json({ message: e.message || "Coupon validation failed" });
   }
 };
+
+export const getActiveCoupons = async (req, res) => {
+  try {
+    const coupons = await prisma.coupon.findMany({
+      where: {
+        status: "Active",
+        startDate: {
+          lte: new Date(),
+        },
+        endDate: {
+          gte: new Date(),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      data: coupons,
+    });
+  } catch (e) {
+    console.error(e);
+
+    return res.status(500).json({
+      message: e.message,
+    });
+  }
+};

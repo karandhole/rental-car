@@ -1,7 +1,9 @@
 import express from "express";
-import { validateCoupon } from "../controllers/userCoupon.controller.js";
+import { validateCoupon,getActiveCoupons, } from "../controllers/userCoupon.controller.js";
 
 const router = express.Router();
+
+router.get("/active", getActiveCoupons);
 
 router.post("/validate", validateCoupon);
 
