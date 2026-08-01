@@ -4,8 +4,59 @@ import {
   getCouponEligibilityError,
 } from "../../../lib/couponValidation.js";
 import {
-  bookingBlocksOverlapSearch,
+  hasBookingConflict,
 } from "../../utils/bookingAvailability.js";
+
+
+export const checkAvailability = async (req, res) => {
+  try {
+    const {
+      carId,
+      pickupDate,
+      returnDate,
+      startDate,
+      endDate,
+    } = req.body;
+
+    const finalPickup = pickupDate || startDate;
+    const finalReturn = returnDate || endDate;
+
+    if (!carId || !finalPickup || !finalReturn) {
+      return res.status(400).json({
+        available: false,
+        message: "carId, pickupDate and returnDate are required.",
+      });
+    }
+
+
+    const conflict = await hasBookingConflict(
+      prisma,
+      carId,
+      new Date(finalPickup),
+      new Date(finalReturn)
+    );
+
+    if (conflict) {
+      return res.status(200).json({
+        available: false,
+        message: "Car already booked for selected date & time.",
+      });
+    }
+
+    return res.status(200).json({
+      available: true,
+      message: "Car is available.",
+    });
+
+
+
+  } catch (err) {
+    return res.status(500).json({
+      available: false,
+      message: err.message,
+    });
+  }
+};
 
 export const createBooking = async (req, res) => {
   try {
@@ -95,26 +146,11 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const existingBookings = await prisma.booking.findMany({
-      where: {
-        carId,
-        status: {
-          in: ["PENDING", "CONFIRMED"],
-        },
-      },
-      select: {
-        pickupDate: true,
-        returnDate: true,
-      },
-    });
-
-    const conflict = existingBookings.find((booking) =>
-      bookingBlocksOverlapSearch(
-        booking.pickupDate,
-        booking.returnDate,
-        new Date(finalPickupDate),
-        new Date(finalReturnDate)
-      )
+    const conflict = await hasBookingConflict(
+      prisma,
+      carId,
+      new Date(finalPickupDate),
+      new Date(finalReturnDate)
     );
 
     if (conflict) {

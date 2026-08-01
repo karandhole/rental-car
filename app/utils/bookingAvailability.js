@@ -4,12 +4,18 @@
  */
 export const BOOKING_BUFFER_MS = 2 * 60 * 60 * 1000; // 2 hour
 
+export const BLOCKING_BOOKING_STATUSES = [
+  "PENDING",
+  "CONFIRMED",
+  "IN_RENTAL",
+];
+
 export function expandRangeWithBuffer(start, end) {
   const s = start instanceof Date ? start : new Date(start);
   const e = end instanceof Date ? end : new Date(end);
   return {
-    start: new Date(s.getTime() - BOOKING_BUFFER_MS),
-    end: new Date(e.getTime() + BOOKING_BUFFER_MS),
+    start: new Date(s),
+    end: new Date(e.getTime() + BOOKING_BUFFER_MS), // Return + 2 hrs buffer
   };
 }
 
@@ -39,5 +45,35 @@ export function bookingBlocksOverlapSearch(bookingPickup, bookingReturn, searchP
     searchBuf.end.getTime(),
     bookingBuf.start.getTime(),
     bookingBuf.end.getTime()
+  );
+}
+
+export async function hasBookingConflict(
+  prisma,
+  carId,
+  pickupDate,
+  returnDate
+) {
+  const existingBookings = await prisma.booking.findMany({
+    where: {
+      carId,
+      status: {
+        in: BLOCKING_BOOKING_STATUSES,
+      },
+    },
+    select: {
+      id: true,
+      pickupDate: true,
+      returnDate: true,
+    },
+  });
+
+  return existingBookings.find((booking) =>
+    bookingBlocksOverlapSearch(
+      booking.pickupDate,
+      booking.returnDate,
+      pickupDate,
+      returnDate
+    )
   );
 }

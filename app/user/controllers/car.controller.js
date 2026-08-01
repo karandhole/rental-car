@@ -5,7 +5,7 @@ import {
   expandRangeWithBuffer,
   parseRentalWindow,
 } from "../../utils/bookingAvailability.js";
-
+import dayjs from "dayjs";
 const BLOCKING_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "IN_RENTAL",];
 
 function buildAvailabilityPayload(bookings, unavailabilityRows) {
@@ -88,7 +88,7 @@ export const createCar = async (req, res) => {
 };
 
 /** Bookings that count toward “popularity” (excludes cancelled only). */
-const POPULAR_BOOKING_STATUSES = ["PENDING", "CONFIRMED",  "IN_RENTAL", "COMPLETED"];
+const POPULAR_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "IN_RENTAL", "COMPLETED"];
 
 /**
  * Top verified cars by booking volume, with aggregate review stats for the home grid.
@@ -131,6 +131,7 @@ export const getPopularCars = async (req, res) => {
     });
 
     const unavailableCars = new Set();
+    const unavailableTime = new Map();
 
     for (const booking of bookings) {
 
@@ -149,6 +150,7 @@ export const getPopularCars = async (req, res) => {
         blockedUntil > now
       ) {
         unavailableCars.add(booking.carId);
+        unavailableTime.set(booking.carId, blockedUntil);
       }
     }
 
@@ -183,6 +185,7 @@ export const getPopularCars = async (req, res) => {
         averageRating,
         reviewCount,
         isAvailable: !unavailableCars.has(car.id),
+        availableFrom: unavailableTime.get(car.id) || null,
       };
     });
 
@@ -211,9 +214,55 @@ export const getAllCars = async (req, res) => {
     const window = parseRentalWindow(req.query.pickup, req.query.returnAt);
 
     if (!window) {
+      const now = new Date();
+
+      const bookings = await prisma.booking.findMany({
+        where: {
+          status: { in: BLOCKING_BOOKING_STATUSES },
+        },
+        select: {
+          carId: true,
+          pickupDate: true,
+          returnDate: true,
+          status: true,
+        },
+      });
+
+      const busyCarIds = new Set();
+      const busyCarTime = new Map();
+      
+      for (const booking of bookings) {
+
+        // Ride started
+        if (booking.status === "IN_RENTAL") {
+          busyCarIds.add(booking.carId);
+          continue;
+        }
+
+        const blockedUntil = new Date(
+          booking.returnDate.getTime() + BOOKING_BUFFER_MS
+        );
+
+        if (
+          booking.pickupDate <= now &&
+          blockedUntil > now
+        ) {
+          busyCarIds.add(booking.carId);
+          busyCarTime.set(booking.carId, blockedUntil);
+        }
+      }
+      const data = cars.map((c) => ({
+        ...c,
+        isAvailable:
+          !["UNDER_MAINTENANCE", "DAMAGED", "PARTNER_USE"].includes(
+            c.operationalStatus
+          ) && !busyCarIds.has(c.id),
+          availableFrom: busyCarTime.get(c.id) || null,
+      }));
+
       return res.status(200).json({
-        count: cars.length,
-        data: cars,
+        count: data.length,
+        data,
         meta: {
           bookingBufferHours: BOOKING_BUFFER_MS / (60 * 60 * 1000),
           searchApplied: false,
@@ -243,6 +292,7 @@ export const getAllCars = async (req, res) => {
     ]);
 
     const busyCarIds = new Set();
+    const busyCarTime = new Map();
 
     for (const b of bookings) {
       if (
@@ -270,10 +320,18 @@ export const getAllCars = async (req, res) => {
       }
     }
 
-    const data = cars.map((c) => ({
-      ...c,
-      isUnavailableForSearch: busyCarIds.has(c.id),
-    }));
+    const data = cars.map((c) => {
+      const isAvailable =
+        !["UNDER_MAINTENANCE", "DAMAGED", "PARTNER_USE"].includes(
+          c.operationalStatus
+        ) && !busyCarIds.has(c.id);
+
+      return {
+        ...c,
+        isAvailable,
+        isUnavailableForSearch: busyCarIds.has(c.id),
+      };
+    });
 
     res.status(200).json({
       count: data.length,
@@ -307,11 +365,11 @@ export const getCarById = async (req, res) => {
         reviews: true,
         bookings: {
           where: { status: { in: BLOCKING_BOOKING_STATUSES } },
-          select: { pickupDate: true, returnDate: true },
+          select: { pickupDate: true, returnDate: true, status: true, },
         },
         unavailabilityRequests: {
           where: { status: "APPROVED" },
-          select: { fromDateTime: true, toDateTime: true },
+          select: { fromDateTime: true, toDateTime: true, },
         },
       },
     });
