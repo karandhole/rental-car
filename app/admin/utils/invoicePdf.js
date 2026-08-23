@@ -57,6 +57,7 @@ function formatDateTime(d) {
   if (!d) return "—";
   const date = d instanceof Date ? d : new Date(d);
   return date.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "numeric",
     day: "numeric",
