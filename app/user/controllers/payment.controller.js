@@ -2,6 +2,7 @@ import razorpay from "../../../lib/razorpay.js";
 import crypto from "crypto";
 import prisma from "../../../lib/db.config.js";
 import { streamInvoicePdfForPaymentRecord } from "../../utils/sendInvoicePdf.js";
+import { sendBookingConfirmationEmails } from "../../user/services/bookingEmail.service.js";
 
 // ─── 1. Create Razorpay Order ────────────────────────────────────────────────
 export const createOrder = async (req, res) => {
@@ -45,7 +46,7 @@ export const verifyPayment = async (req, res) => {
 
   try {
     if (isValid) {
-      // Save Payment record
+
       const payment = await prisma.payment.create({
         data: {
           bookingId,
@@ -61,7 +62,7 @@ export const verifyPayment = async (req, res) => {
       });
 
       // Update Booking status → CONFIRMED and store paymentId
-      await prisma.booking.update({
+     const updatedBooking = await prisma.booking.update({
         where: { id: bookingId },
         data: {
           status: "CONFIRMED",
@@ -70,7 +71,49 @@ export const verifyPayment = async (req, res) => {
         },
       });
 
-      return res.status(200).json({ success: true, payment });
+      const bookingWithDetails =
+        await prisma.booking.findUnique({
+          where: {
+            id: bookingId,
+          },
+          include: {
+            car: true,
+            user: true,
+            pricing: true,
+          },
+        });
+
+      if (!bookingWithDetails) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found.",
+        });
+      }
+
+      // =====================================================
+      // 4. SEND BOOKING EMAILS
+      // =====================================================
+      try {
+        await sendBookingConfirmationEmails({
+          booking: bookingWithDetails,
+          customer: bookingWithDetails.user,
+          payment,
+        });
+
+        console.log(
+          "✅ Customer + Admin booking emails sent successfully"
+        );
+
+      } catch (emailError) {
+
+        console.error(
+          "❌ Booking email failed:",
+          emailError.message
+        );
+      }
+
+      return res.status(200).json({ success: true, payment,booking: updatedBooking,message:
+          "Payment verified and booking confirmed.", });
     } else {
       // Save failed payment record (only if bookingId present)
       if (bookingId && userId) {
