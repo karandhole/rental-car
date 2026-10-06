@@ -58,8 +58,8 @@ export function streamInvoicePdfForPaymentRecord(payment, res, gstPercent) {
   const companyName = process.env.INVOICE_COMPANY_NAME || "Ekalo Drive";
   const companyAddress =
     process.env.INVOICE_COMPANY_ADDRESS ||
-    "PRAYEJA CITY, Flat No. B-2, S NO-71, Floor 204, Sinhagad Road, Vadgaon Budruk, Pune - 411051, Maharashtra, India.";
-  const companyPhone = process.env.INVOICE_COMPANY_PHONE || "+91 9168527197";
+    "131,Flame Ring Road, Near Khandoba Temple, Sunarwadi, Bhunde Vasti, Bavdhan Pune, Maharashtra 411021 India.";
+  const companyPhone = process.env.INVOICE_COMPANY_PHONE || "+91 9373061567";
   const companyEmail = process.env.INVOICE_COMPANY_EMAIL || "support@ekalodrive.com";
   const companyGstin = process.env.INVOICE_COMPANY_GSTIN || "27CCKPN2833G1ZH";
   const companyLogoPath = process.env.INVOICE_COMPANY_LOGO_PATH || "";
